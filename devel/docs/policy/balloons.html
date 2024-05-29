@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Balloons Policy &mdash; CRI Resource Manager 0.8.0-43-g88b90c8a documentation</title>
-      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <title>Balloons Policy &mdash; CRI Resource Manager 0.0.0-1-g8b6c010 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+
+  
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -82,6 +84,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../node-agent.html">Node Agent</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../webhook.html">Webhook</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../developers-guide/index.html">Developer’s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration-to-NRI.html">Migrating from CRI-RM to NRI</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../demos/index.html">Demos</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference/index.html">Reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
@@ -199,6 +202,16 @@ in balloons when system is not fully loaded. The default is <code class="docutil
 pack new balloons tightly into the same NUMAs/dies/packages. This
 helps keeping large portions of hardware idle and entering into deep
 power saving states.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PreferSpreadOnPhysicalCores</span></code> prefers allocating logical CPUs
+(possibly hyperthreads) for a balloon from separate physical CPU
+cores. This prevents workloads in the balloon from interfering with
+themselves as they do not compete on the resources of the same CPU
+cores. On the other hand, it allows more interference between
+workloads in different balloons. The default is <code class="docutils literal notranslate"><span class="pre">false</span></code>: balloons
+are packed tightly to a minimum number of physical CPU cores. The
+value set here is the default for all balloon types, but it can be
+overridden with the balloon type specific setting with the same
+name.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">BalloonTypes</span></code> is a list of balloon type definitions. Each type can
 be configured with the following parameters:</p>
 <ul>
@@ -253,6 +266,8 @@ anywhere in the system.</p></li>
 the balloon.</p></li>
 </ul>
 </li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PreferSpreadOnPhysicalCores</span></code> overrides the policy level option
+with the same name in the scope of this balloon type.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">AllocatorPriority</span></code> (0: High, 1: Normal, 2: Low, 3: None). CPU
 allocator parameter, used when creating new or resizing existing
 balloons. If there are balloon types with pre-created balloons
@@ -273,34 +288,34 @@ special <code class="docutils literal notranslate"><span class="pre">reserved</s
 <section id="example">
 <h3>Example<a class="headerlink" href="#example" title="Permalink to this heading"></a></h3>
 <p>Example configuration that runs all pods in balloons of 1-4 CPUs.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policy</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">Active</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">balloons</span><span class="w"></span>
-<span class="w">  </span><span class="nt">ReservedResources</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">CPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
-<span class="w">  </span><span class="nt">balloons</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">PinCPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
-<span class="w">    </span><span class="nt">PinMemory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
-<span class="w">    </span><span class="nt">IdleCPUClass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lowpower</span><span class="w"></span>
-<span class="w">    </span><span class="nt">BalloonTypes</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quad&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="nt">MinCpus</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
-<span class="w">        </span><span class="nt">MaxCPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span><span class="w"></span>
-<span class="w">        </span><span class="nt">CPUClass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dynamic</span><span class="w"></span>
-<span class="w">        </span><span class="nt">Namespaces</span><span class="p">:</span><span class="w"></span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*&quot;</span><span class="w"></span>
-<span class="nt">cpu</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">classes</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">lowpower</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">minFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">800</span><span class="w"></span>
-<span class="w">      </span><span class="nt">maxFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">800</span><span class="w"></span>
-<span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">minFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">800</span><span class="w"></span>
-<span class="w">      </span><span class="nt">maxFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3600</span><span class="w"></span>
-<span class="w">    </span><span class="nt">turbo</span><span class="p">:</span><span class="w"></span>
-<span class="w">      </span><span class="nt">minFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3000</span><span class="w"></span>
-<span class="w">      </span><span class="nt">maxFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3600</span><span class="w"></span>
-<span class="w">      </span><span class="nt">uncoreMinFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span><span class="w"></span>
-<span class="w">      </span><span class="nt">uncoreMaxFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2400</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">policy</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Active</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">balloons</span>
+<span class="w">  </span><span class="nt">ReservedResources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">CPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">balloons</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">PinCPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">PinMemory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">IdleCPUClass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lowpower</span>
+<span class="w">    </span><span class="nt">BalloonTypes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;quad&quot;</span>
+<span class="w">        </span><span class="nt">MinCpus</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">MaxCPUs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">        </span><span class="nt">CPUClass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dynamic</span>
+<span class="w">        </span><span class="nt">Namespaces</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*&quot;</span>
+<span class="nt">cpu</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">classes</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">lowpower</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">minFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">800</span>
+<span class="w">      </span><span class="nt">maxFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">800</span>
+<span class="w">    </span><span class="nt">dynamic</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">minFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">800</span>
+<span class="w">      </span><span class="nt">maxFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3600</span>
+<span class="w">    </span><span class="nt">turbo</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">minFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3000</span>
+<span class="w">      </span><span class="nt">maxFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3600</span>
+<span class="w">      </span><span class="nt">uncoreMinFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span>
+<span class="w">      </span><span class="nt">uncoreMaxFreq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2400</span>
 </pre></div>
 </div>
 <p>See the <span class="xref myst">sample configmap</span> for a
@@ -313,9 +328,9 @@ complete example.</p>
 the example below, the first annotation sets the balloon type (<code class="docutils literal notranslate"><span class="pre">BT</span></code>)
 of a single container (<code class="docutils literal notranslate"><span class="pre">CONTAINER_NAME</span></code>). The last two annotations set
 the default balloon type for all containers in the pod.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">balloon.balloons.cri-resource-manager.intel.com/container.CONTAINER_NAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BT</span><span class="w"></span>
-<span class="nt">balloon.balloons.cri-resource-manager.intel.com/pod</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BT</span><span class="w"></span>
-<span class="nt">balloon.balloons.cri-resource-manager.intel.com</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BT</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">balloon.balloons.cri-resource-manager.intel.com/container.CONTAINER_NAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BT</span>
+<span class="nt">balloon.balloons.cri-resource-manager.intel.com/pod</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BT</span>
+<span class="nt">balloon.balloons.cri-resource-manager.intel.com</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BT</span>
 </pre></div>
 </div>
 <p>If a pod has no annotations, its namespace is matched to the
@@ -331,14 +346,14 @@ the <code class="docutils literal notranslate"><span class="pre">BalloonTypes</s
 <p>In order to enable more verbose logging and metrics exporting from the
 balloons policy, enable instrumentation and policy debugging from the
 CRI-RM global config:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">instrumentation</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># The balloons policy exports containers running in each balloon,</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># and cpusets of balloons. Accessible in command line:</span><span class="w"></span>
-<span class="w">  </span><span class="c1"># curl --silent http://localhost:8891/metrics</span><span class="w"></span>
-<span class="w">  </span><span class="nt">HTTPEndpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">:8891</span><span class="w"></span>
-<span class="w">  </span><span class="nt">PrometheusExport</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
-<span class="nt">logger</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">Debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">instrumentation</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># The balloons policy exports containers running in each balloon,</span>
+<span class="w">  </span><span class="c1"># and cpusets of balloons. Accessible in command line:</span>
+<span class="w">  </span><span class="c1"># curl --silent http://localhost:8891/metrics</span>
+<span class="w">  </span><span class="nt">HTTPEndpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">:8891</span>
+<span class="w">  </span><span class="nt">PrometheusExport</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">logger</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Debug</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy</span>
 </pre></div>
 </div>
 </section>
